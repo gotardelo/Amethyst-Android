@@ -114,11 +114,11 @@ import java.util.Map;
 public final class Tools {
     public  static final float BYTE_TO_MB = 1024 * 1024;
     public static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
-    public static String APP_NAME = "Amethyst";
+    public static String APP_NAME = "Cobblemon Legacy";
 
     public static final Gson GLOBAL_GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public static final String URL_HOME = "https://wiki.angelauramc.dev";
+    public static final String URL_HOME = "https://www.cobblemonlegacy.com.br";
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
@@ -129,7 +129,7 @@ public final class Tools {
 
     // New since 3.3.1
     public static String DIR_ACCOUNT_NEW;
-    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/Amethyst";
+    public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/CobblemonLegacy";
     public static String DIR_GAME_NEW;
     public static String GAME_PROFILES_FILE;
 
@@ -156,7 +156,7 @@ public final class Tools {
         if(SDK_INT >= 29) {
             return ctx.getExternalFilesDir(null);
         }else{
-            return new File(Environment.getExternalStorageDirectory(),"games/Amethyst");
+            return new File(Environment.getExternalStorageDirectory(),"games/CobblemonLegacy");
         }
     }
 
