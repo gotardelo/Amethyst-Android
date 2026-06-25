@@ -95,6 +95,20 @@ public final class CobblemonLegacyInstaller {
         });
     }
 
+    public static boolean ensureCurrentProfileReady(Context context) throws IOException {
+        LauncherProfiles.load();
+        String profileKey = LauncherPreferences.DEFAULT_PREF.getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "");
+        if (profileKey == null || profileKey.isEmpty()) return false;
+
+        MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
+        if (profile == null) return false;
+        if (!PROFILE_NAME.equals(profile.name) && !isCurrentPack(profile)) return false;
+
+        ensureControlLayout(context, profileKey);
+        ensureCobblemonKeybinds(profileKey);
+        return true;
+    }
+
     public static String findInstalledProfileKey() {
         LauncherProfiles.load();
         String versionId = getFabricVersionId();

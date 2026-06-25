@@ -7,6 +7,7 @@ import android.provider.DocumentsContract;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.drawerlayout.widget.DrawerLayout;
 
@@ -74,6 +75,7 @@ public class CustomControlsActivity extends BaseActivity implements EditorExitab
 		}catch (IOException e) {
 			Tools.showError(this, e);
 		}
+		Toast.makeText(this, "Modo edicao: ajuste os botoes aqui e teste os comandos dentro do jogo.", Toast.LENGTH_LONG).show();
 	}
 
 	@Override

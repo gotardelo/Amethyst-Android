@@ -34,6 +34,7 @@ import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 
 import java.io.File;
+import java.io.IOException;
 
 public class MainMenuFragment extends Fragment {
     public static final String TAG = "MainMenuFragment";
@@ -78,6 +79,13 @@ public class MainMenuFragment extends Fragment {
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
         mPlayButton.setOnClickListener(v -> {
+            try {
+                CobblemonLegacyInstaller.ensureCurrentProfileReady(requireContext());
+            } catch (IOException e) {
+                Tools.showErrorRemote("Nao foi possivel aplicar os controles do Cobblemon Legacy.", e);
+                return;
+            }
+
             if (Tools.hasMods("sodium") && !(LauncherPreferences.DEFAULT_PREF.getBoolean("sodium_override", false))) {
                 AlertDialog sodiumWarningDialog = new AlertDialog.Builder(requireContext())
                         .setTitle(R.string.sodium_warning_title)
