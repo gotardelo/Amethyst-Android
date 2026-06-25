@@ -27,16 +27,44 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public final class CobblemonLegacyInstaller {
     public static final String PROFILE_NAME = "Cobblemon Legacy";
     public static final String MINECRAFT_VERSION = "1.21.1";
     public static final String FABRIC_LOADER_VERSION = "0.19.3";
-    public static final String PACK_VERSION = "0.2.1";
-    public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.1/CobblemonLegacy-MobileFull-v0.2.1.mrpack";
-    public static final String PACK_SHA1 = "43bdf444869ffe34da0897a7785f8e628c96b082";
+    public static final String PACK_VERSION = "0.2.2";
+    public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.2/CobblemonLegacy-MobileFull-v0.2.2.mrpack";
+    public static final String PACK_SHA1 = "9f27d41802df68492308594976655e45a2d8a74d";
     private static final String CONTROL_LAYOUT_FILE = "cobblemon-legacy.json";
+    private static final String[][] REQUIRED_OPTIONS = new String[][]{
+            {"key_key.inventory", "key.keyboard.e"},
+            {"key_key.use", "key.mouse.right"},
+            {"key_key.attack", "key.mouse.left"},
+            {"key_key.cobblemon.throwpartypokemon", "key.keyboard.r"},
+            {"key_key.cobblemon.upshiftparty", "key.keyboard.up"},
+            {"key_key.cobblemon.downshiftparty", "key.keyboard.down"},
+            {"key_key.cobblemon.summary", "key.keyboard.m"},
+            {"key_key.cobblemon.pokenavigator", "key.keyboard.c"},
+            {"key_key.cobblemon.pokedex", "key.keyboard.p"},
+            {"key_key.mega_showdown.mega_evo", "key.keyboard.g"},
+            {"key_key.mega_showdown.ultra_key", "key.keyboard.h"},
+            {"key_key.smallships.ship_sail", "key.keyboard.unknown"},
+            {"key_key.smallships.ship_inventory", "key.keyboard.unknown"},
+            {"key_key.smallships.higher_ship_sail", "key.keyboard.unknown"},
+            {"key_key.smallships.lower_ship_sail", "key.keyboard.unknown"},
+            {"key_key.smallships.cannon_barrel_enter", "key.keyboard.unknown"},
+            {"key_key.cannon_shoot", "key.keyboard.unknown"},
+            {"key_key.ship_forward", "key.keyboard.unknown"},
+            {"key_key.ship_backward", "key.keyboard.unknown"},
+            {"key_key.ship_left", "key.keyboard.unknown"},
+            {"key_key.ship_right", "key.keyboard.unknown"},
+            {"key_key.pokebike.visuals", "key.keyboard.unknown"},
+            {"key_key.pokebike.bell", "key.keyboard.unknown"},
+            {"key_key.pokebike.headlight", "key.keyboard.unknown"}
+    };
 
     private CobblemonLegacyInstaller() {}
 
@@ -127,6 +155,7 @@ public final class CobblemonLegacyInstaller {
         }
 
         ensureControlLayout(context, profileKey);
+        ensureCobblemonKeybinds(profileKey);
 
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
@@ -160,6 +189,71 @@ public final class CobblemonLegacyInstaller {
         }
         profile.controlFile = CONTROL_LAYOUT_FILE;
         LauncherProfiles.write();
+    }
+
+    private static void ensureCobblemonKeybinds(String profileKey) throws IOException {
+        MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
+        if (profile == null) {
+            throw new IOException("O perfil Cobblemon Legacy nao foi encontrado para aplicar keybinds.");
+        }
+
+        File gameDir = Tools.getGameDirPath(profile);
+        FileUtils.ensureDirectory(gameDir);
+        File optionsFile = new File(gameDir, "options.txt");
+        String currentOptions = optionsFile.isFile() ? Tools.read(optionsFile.getAbsolutePath()) : "";
+        String[] rawLines = currentOptions.split("\\R", -1);
+        boolean[] applied = new boolean[REQUIRED_OPTIONS.length];
+        boolean changed = false;
+        List<String> nextLines = new ArrayList<>();
+
+        for (String line : rawLines) {
+            if (line.length() == 0) continue;
+
+            int separatorIndex = line.indexOf(':');
+            if (separatorIndex <= 0) {
+                nextLines.add(line);
+                continue;
+            }
+
+            String key = line.substring(0, separatorIndex);
+            int requiredIndex = findRequiredOptionIndex(key);
+            if (requiredIndex < 0) {
+                nextLines.add(line);
+                continue;
+            }
+
+            String replacement = REQUIRED_OPTIONS[requiredIndex][0] + ":" + REQUIRED_OPTIONS[requiredIndex][1];
+            if (!applied[requiredIndex]) {
+                nextLines.add(replacement);
+                applied[requiredIndex] = true;
+                changed = changed || !replacement.equals(line);
+            }
+            else {
+                changed = true;
+            }
+        }
+
+        for (int i = 0; i < REQUIRED_OPTIONS.length; i++) {
+            if (!applied[i]) {
+                nextLines.add(REQUIRED_OPTIONS[i][0] + ":" + REQUIRED_OPTIONS[i][1]);
+                changed = true;
+            }
+        }
+
+        if (changed || !optionsFile.isFile()) {
+            StringBuilder builder = new StringBuilder();
+            for (String line : nextLines) {
+                builder.append(line).append('\n');
+            }
+            Tools.write(optionsFile.getAbsolutePath(), builder.toString());
+        }
+    }
+
+    private static int findRequiredOptionIndex(String key) {
+        for (int i = 0; i < REQUIRED_OPTIONS.length; i++) {
+            if (REQUIRED_OPTIONS[i][0].equals(key)) return i;
+        }
+        return -1;
     }
 
     private static void ensureMinecraftVersionJson() throws IOException {
