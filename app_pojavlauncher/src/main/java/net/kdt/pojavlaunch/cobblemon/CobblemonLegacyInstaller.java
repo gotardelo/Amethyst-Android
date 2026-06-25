@@ -33,9 +33,10 @@ public final class CobblemonLegacyInstaller {
     public static final String PROFILE_NAME = "Cobblemon Legacy";
     public static final String MINECRAFT_VERSION = "1.21.1";
     public static final String FABRIC_LOADER_VERSION = "0.19.3";
-    public static final String PACK_VERSION = "0.2.0";
-    public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.0/CobblemonLegacy-MobileFull-v0.2.0.mrpack";
-    public static final String PACK_SHA1 = "a1b30a8e48ce33c48681fe3488884110852b5aa3";
+    public static final String PACK_VERSION = "0.2.1";
+    public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.1/CobblemonLegacy-MobileFull-v0.2.1.mrpack";
+    public static final String PACK_SHA1 = "43bdf444869ffe34da0897a7785f8e628c96b082";
+    private static final String CONTROL_LAYOUT_FILE = "cobblemon-legacy.json";
 
     private CobblemonLegacyInstaller() {}
 
@@ -53,7 +54,7 @@ public final class CobblemonLegacyInstaller {
         ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, "Preparando Cobblemon Legacy...");
         PojavApplication.sExecutorService.execute(() -> {
             try {
-                String profileKey = installOrUpdateBlocking();
+                String profileKey = installOrUpdateBlocking(appContext);
                 Tools.runOnUiThread(() -> {
                     if (callback != null) callback.onSuccess(profileKey);
                     Toast.makeText(appContext, "Cobblemon Legacy pronto para jogar.", Toast.LENGTH_LONG).show();
@@ -85,11 +86,12 @@ public final class CobblemonLegacyInstaller {
         return null;
     }
 
-    private static String installOrUpdateBlocking() throws IOException {
+    private static String installOrUpdateBlocking(Context context) throws IOException {
         LauncherProfiles.load();
         ModLoader modLoader = new ModLoader(ModLoader.MOD_LOADER_FABRIC, FABRIC_LOADER_VERSION, MINECRAFT_VERSION);
         String profileKey = findInstalledProfileKey();
-        if (profileKey == null || !isPackComplete(LauncherProfiles.mainProfileJson.profiles.get(profileKey))) {
+        MinecraftProfile profile = profileKey == null ? null : LauncherProfiles.mainProfileJson.profiles.get(profileKey);
+        if (profileKey == null || !isCurrentPack(profile) || !isPackComplete(profile)) {
             ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, "Baixando pack Cobblemon Legacy...");
             ModItem item = new ModItem(
                     Constants.SOURCE_MODRINTH,
@@ -124,10 +126,16 @@ public final class CobblemonLegacyInstaller {
             throw new IOException("O perfil Cobblemon Legacy nao foi encontrado apos instalar o Fabric.");
         }
 
+        ensureControlLayout(context, profileKey);
+
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
                 .apply();
         return profileKey;
+    }
+
+    private static boolean isCurrentPack(MinecraftProfile profile) {
+        return profile != null && profile.gameDir != null && profile.gameDir.contains(PACK_SHA1);
     }
 
     private static boolean isPackComplete(MinecraftProfile profile) {
@@ -142,6 +150,16 @@ public final class CobblemonLegacyInstaller {
     private static int countFiles(File dir, String suffix) {
         File[] files = dir.listFiles((ignored, name) -> name.toLowerCase().endsWith(suffix));
         return files == null ? 0 : files.length;
+    }
+
+    private static void ensureControlLayout(Context context, String profileKey) throws IOException {
+        Tools.copyAssetFile(context, CONTROL_LAYOUT_FILE, Tools.CTRLMAP_PATH, CONTROL_LAYOUT_FILE, true);
+        MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
+        if (profile == null) {
+            throw new IOException("O perfil Cobblemon Legacy nao foi encontrado para aplicar controles.");
+        }
+        profile.controlFile = CONTROL_LAYOUT_FILE;
+        LauncherProfiles.write();
     }
 
     private static void ensureMinecraftVersionJson() throws IOException {
