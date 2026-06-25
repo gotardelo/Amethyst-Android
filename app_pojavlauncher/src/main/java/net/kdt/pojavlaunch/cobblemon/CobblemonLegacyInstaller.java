@@ -139,6 +139,18 @@ public final class CobblemonLegacyInstaller {
         return profileKey;
     }
 
+    public static String prepareProfileForLaunch(Context context) throws IOException {
+        try {
+            return requireInstalledProfileReady(context);
+        } catch (IOException e) {
+            String message = e.getMessage();
+            if (message == null || !message.contains("nao esta instalado")) throw e;
+        }
+
+        ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, "Instalando Cobblemon Legacy...");
+        return installOrUpdateBlocking(context);
+    }
+
     public static String findInstalledProfileKey() {
         LauncherProfiles.load();
         String versionId = getFabricVersionId();

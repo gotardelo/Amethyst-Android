@@ -85,7 +85,7 @@ public class MainMenuFragment extends Fragment {
             mPlayButton.setEnabled(false);
             PojavApplication.sExecutorService.execute(() -> {
                 try {
-                    String profileKey = CobblemonLegacyInstaller.requireInstalledProfileReady(appContext);
+                    String profileKey = CobblemonLegacyInstaller.prepareProfileForLaunch(appContext);
                     runOnUiThread(() -> {
                         if (!isAdded()) return;
                         mPlayButton.setEnabled(true);
