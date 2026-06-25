@@ -205,7 +205,7 @@
     <string name="xerr_no_account">Parece que você não tem uma conta Xbox Live. Por favor, faça login em https://minecraft.net/ e tente novamente.</string>
     <string name="xerr_adult_verification">Um adulto precisa verificar sua conta.</string>
     <string name="xerr_child">Sua conta é uma conta de criança, e precisa ser colocada em uma família para poder entrar.</string>
-    <string name="minecraft_not_owned">Parece que esta conta não tem um perfil do Minecraft. Se você tiver o Xbox Game Pass, faça login em https://minecraft.net/ e configure-o.</string>
+    <string name="minecraft_not_owned">Esta conta Microsoft não possui Minecraft Java Edition. Use uma conta Microsoft com Java Edition ou escolha nickname offline.</string>
     <string name="xerr_not_available">Xbox Live não está disponível em seu país</string>
     <string name="preference_enable_gyro_title">Habilitar controles do gyrocópio</string>
     <string name="preference_enable_gyro_description">Habilitar isto permite que você rotacione do jogo, rotacionando seu celular.</string>

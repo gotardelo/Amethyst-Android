@@ -52,7 +52,9 @@ public class PojavProfile {
 		File accountFolder = new File(Tools.DIR_ACCOUNT_NEW);
 		if(accountFolder.exists() && accountFolder.list() != null){
 			for (String fileName : Objects.requireNonNull(accountFolder.list())) {
-				accountList.add(fileName.substring(0, fileName.length() - 5));
+				String accountName = fileName.substring(0, fileName.length() - 5);
+				if(accountName.startsWith("Demo.")) continue;
+				accountList.add(accountName);
 			}
 		}
 		return accountList;

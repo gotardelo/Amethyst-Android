@@ -257,7 +257,9 @@ public class mcAccountSpinner extends AppCompatSpinner implements AdapterView.On
             File accountFolder = new File(Tools.DIR_ACCOUNT_NEW);
             if(accountFolder.exists()){
                 for (String fileName : accountFolder.list()) {
-                    mAccountList.add(fileName.substring(0, fileName.length() - 5));
+                    String accountName = fileName.substring(0, fileName.length() - 5);
+                    if(accountName.startsWith("Demo.")) continue;
+                    mAccountList.add(accountName);
                 }
             }
         }
@@ -327,6 +329,11 @@ public class mcAccountSpinner extends AppCompatSpinner implements AdapterView.On
             int spinnerPosition = selectedAccount == null
                     ? mAccountList.size() <= 1 ? 0 : 1
                     : mAccountList.indexOf(selectedAccount.username);
+            if(spinnerPosition < 0) {
+                spinnerPosition = mAccountList.size() <= 1 ? 0 : 1;
+                selectedAccount = spinnerPosition == 0 ? null : PojavProfile.getCurrentProfileContent(getContext(), mAccountList.get(spinnerPosition));
+                if(selectedAccount != null) PojavProfile.setCurrentProfile(getContext(), selectedAccount.username);
+            }
             setSelection(spinnerPosition, false);
         }
 
