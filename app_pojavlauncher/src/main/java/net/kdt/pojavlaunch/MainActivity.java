@@ -471,12 +471,19 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         }
         int requiredJavaVersion = 8;
         if(version.javaVersion != null) requiredJavaVersion = version.javaVersion.majorVersion;
+        if(requiredJavaVersion < 21 && (versionId.contains("1.21") || versionId.contains("1.20.5") || versionId.contains("1.20.6"))) {
+            requiredJavaVersion = 21;
+        }
         if (!NewJREUtil.installNewJreIfNeeded(this, version)) {
             Tools.runOnUiThread(()-> mServiceBinder.isActive = false);
             return;
         }
-        JREUtils.redirectAndPrintJRELog();
+        String runtimeName = NewJREUtil.ensureRuntimeAvailable(this, requiredJavaVersion);
         LauncherProfiles.load();
+        minecraftProfile = LauncherProfiles.getCurrentProfile();
+        minecraftProfile.javaDir = Tools.LAUNCHERPROFILES_RTPREFIX + runtimeName;
+        LauncherProfiles.write();
+        JREUtils.redirectAndPrintJRELog();
         Tools.launchMinecraft(this, minecraftAccount, minecraftProfile, versionId, requiredJavaVersion);
         //Note that we actually stall in the above function, even if the game crashes. But let's be safe.
         Tools.runOnUiThread(()-> mServiceBinder.isActive = false);

@@ -163,6 +163,20 @@ public class NewJREUtil {
                 activity.getString(R.string.multirt_nocompatiblert, verInfo.javaVersion.majorVersion));
     }
 
+    public static String ensureRuntimeAvailable(Context context, int javaVersion) {
+        if (javaVersion <= 0) javaVersion = 21;
+
+        String runtimeName = MultiRTUtils.getNearestJreName(javaVersion);
+        if (runtimeName == null) {
+            tryDownloadRuntime(context, javaVersion);
+            runtimeName = MultiRTUtils.getNearestJreName(javaVersion);
+        }
+        if (runtimeName == null) {
+            throw new RuntimeException("No compatible Java runtime found after install attempt.");
+        }
+        return runtimeName;
+    }
+
     public static boolean isJavaVersionAvailableForDownload(int version) {
         for (ExternalRuntime javaVersion : ExternalRuntime.values()) {
             if (javaVersion.majorVersion == version) {
