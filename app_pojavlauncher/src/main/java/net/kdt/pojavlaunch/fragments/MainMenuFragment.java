@@ -80,9 +80,12 @@ public class MainMenuFragment extends Fragment {
 
         mPlayButton.setOnClickListener(v -> {
             try {
-                CobblemonLegacyInstaller.ensureCurrentProfileReady(requireContext());
+                String profileKey = CobblemonLegacyInstaller.requireInstalledProfileReady(requireContext());
+                mVersionSpinner.reloadProfiles();
+                int profileIndex = mVersionSpinner.getProfileAdapter().resolveProfileIndex(profileKey);
+                if (profileIndex >= 0) mVersionSpinner.setProfileSelection(profileIndex);
             } catch (IOException e) {
-                Tools.showErrorRemote("Nao foi possivel aplicar os controles do Cobblemon Legacy.", e);
+                Tools.showErrorRemote("Nao foi possivel preparar o Cobblemon Legacy Fabric 1.21.1.", e);
                 return;
             }
 

@@ -110,6 +110,35 @@ public final class CobblemonLegacyInstaller {
         return true;
     }
 
+    public static String requireInstalledProfileReady(Context context) throws IOException {
+        LauncherProfiles.load();
+        String profileKey = findInstalledProfileKey();
+        if (profileKey == null) profileKey = findLegacyProfileKey();
+        if (profileKey == null) {
+            throw new IOException("O perfil Cobblemon Legacy Fabric " + MINECRAFT_VERSION + " nao esta instalado. Toque em Cobblemon Legacy para instalar ou atualizar antes de jogar.");
+        }
+
+        MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
+        if (profile == null) {
+            throw new IOException("O perfil Cobblemon Legacy nao foi encontrado.");
+        }
+
+        ModLoader modLoader = new ModLoader(ModLoader.MOD_LOADER_FABRIC, FABRIC_LOADER_VERSION, MINECRAFT_VERSION);
+        ensureMinecraftVersionJson();
+        ensureFabricLoader(modLoader);
+
+        profile.name = PROFILE_NAME;
+        profile.lastVersionId = getFabricVersionId();
+        ensureControlLayout(context, profileKey);
+        ensureCobblemonKeybinds(profileKey);
+
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
+                .apply();
+        LauncherProfiles.write();
+        return profileKey;
+    }
+
     public static String findInstalledProfileKey() {
         LauncherProfiles.load();
         String versionId = getFabricVersionId();
@@ -125,6 +154,16 @@ public final class CobblemonLegacyInstaller {
             if (profile != null && PROFILE_NAME.equals(profile.name) && versionId.equals(profile.lastVersionId)) {
                 return entry.getKey();
             }
+        }
+        return null;
+    }
+
+    private static String findLegacyProfileKey() {
+        LauncherProfiles.load();
+        for (Map.Entry<String, MinecraftProfile> entry : LauncherProfiles.mainProfileJson.profiles.entrySet()) {
+            MinecraftProfile profile = entry.getValue();
+            if (profile == null) continue;
+            if (PROFILE_NAME.equals(profile.name) || isCurrentPack(profile)) return entry.getKey();
         }
         return null;
     }
