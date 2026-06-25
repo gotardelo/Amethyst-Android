@@ -16,8 +16,14 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.ModDetail;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.ModItem;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
+import net.kdt.pojavlaunch.utils.DownloadUtils;
+import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -110,6 +116,7 @@ public final class CobblemonLegacyInstaller {
             }
         }
 
+        ensureMinecraftVersionJson();
         ensureFabricLoader(modLoader);
         LauncherProfiles.load();
         profileKey = findInstalledProfileKey();
@@ -137,7 +144,36 @@ public final class CobblemonLegacyInstaller {
         return files == null ? 0 : files.length;
     }
 
+    private static void ensureMinecraftVersionJson() throws IOException {
+        File versionJsonDir = new File(Tools.DIR_HOME_VERSION, MINECRAFT_VERSION);
+        File versionJson = new File(versionJsonDir, MINECRAFT_VERSION + ".json");
+        if (versionJson.isFile() && versionJson.length() > 0) return;
+
+        ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, "Preparando Minecraft " + MINECRAFT_VERSION + "...");
+        String versionJsonUrl = findMinecraftVersionJsonUrl();
+        String versionJsonContents = DownloadUtils.downloadString(versionJsonUrl);
+        FileUtils.ensureDirectory(versionJsonDir);
+        Tools.write(versionJson.getAbsolutePath(), versionJsonContents);
+    }
+
+    private static String findMinecraftVersionJsonUrl() throws IOException {
+        try {
+            JSONObject manifest = new JSONObject(DownloadUtils.downloadString(LauncherPreferences.PREF_VERSION_REPOS));
+            JSONArray versions = manifest.getJSONArray("versions");
+            for (int i = 0; i < versions.length(); i++) {
+                JSONObject version = versions.getJSONObject(i);
+                if (MINECRAFT_VERSION.equals(version.getString("id"))) {
+                    return version.getString("url");
+                }
+            }
+        } catch (JSONException e) {
+            throw new IOException("Nao foi possivel ler o manifest de versoes do Minecraft.", e);
+        }
+        throw new IOException("Minecraft " + MINECRAFT_VERSION + " nao foi encontrado no manifest oficial.");
+    }
+
     private static void ensureFabricLoader(ModLoader modLoader) throws IOException {
+        ensureMinecraftVersionJson();
         File versionJson = new File(Tools.DIR_HOME_VERSION + "/" + modLoader.getVersionId() + "/" + modLoader.getVersionId() + ".json");
         if (versionJson.isFile()) return;
 

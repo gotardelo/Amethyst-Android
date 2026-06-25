@@ -82,6 +82,9 @@ import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.libsdl.app.SDLControllerManager;
 import org.lwjgl.glfw.CallbackBridge;
 
@@ -1249,7 +1252,13 @@ public final class Tools {
                 try{
                     inheritsVer = Tools.GLOBAL_GSON.fromJson(read(DIR_HOME_VERSION + "/" + customVer.inheritsFrom + "/" + customVer.inheritsFrom + ".json"), JMinecraftVersionList.Version.class);
                 }catch(IOException e) {
-                    throw new RuntimeException("Can't find the source version for "+ versionName +" (req version="+customVer.inheritsFrom+")");
+                    try {
+                        ensureVersionJsonDownloaded(customVer.inheritsFrom);
+                        inheritsVer = Tools.GLOBAL_GSON.fromJson(read(DIR_HOME_VERSION + "/" + customVer.inheritsFrom + "/" + customVer.inheritsFrom + ".json"), JMinecraftVersionList.Version.class);
+                    } catch (IOException repairError) {
+                        repairError.addSuppressed(e);
+                        throw new RuntimeException("Can't find the source version for "+ versionName +" (req version="+customVer.inheritsFrom+")", repairError);
+                    }
                 }
                 //inheritsVer.inheritsFrom = inheritsVer.id;
                 insertSafety(inheritsVer, customVer,
@@ -1332,6 +1341,28 @@ public final class Tools {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void ensureVersionJsonDownloaded(String versionId) throws IOException {
+        File versionJson = new File(DIR_HOME_VERSION, versionId + "/" + versionId + ".json");
+        if (versionJson.isFile() && versionJson.length() > 0) return;
+
+        try {
+            JSONObject manifest = new JSONObject(DownloadUtils.downloadString(LauncherPreferences.PREF_VERSION_REPOS));
+            JSONArray versions = manifest.getJSONArray("versions");
+            for (int i = 0; i < versions.length(); i++) {
+                JSONObject version = versions.getJSONObject(i);
+                if (!versionId.equals(version.getString("id"))) continue;
+
+                String jsonContents = DownloadUtils.downloadString(version.getString("url"));
+                write(versionJson.getAbsolutePath(), jsonContents);
+                return;
+            }
+        } catch (JSONException e) {
+            throw new IOException("Unable to parse Minecraft version manifest", e);
+        }
+
+        throw new IOException("Minecraft version metadata not found: " + versionId);
     }
 
     // Prevent NullPointerException
