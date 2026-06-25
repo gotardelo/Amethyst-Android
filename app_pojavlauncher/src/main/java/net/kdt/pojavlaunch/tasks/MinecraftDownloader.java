@@ -86,7 +86,7 @@ public class MinecraftDownloader {
 
         sExecutorService.execute(() -> {
             try {
-                if(isLocalProfile || !isOnline) {
+                if(!isOnline) {
                     String versionMessage = realVersion; // Use provided version unless we find its a modded instance
 
                     // See if provided version is a modded version and if that version depends on another jar, check for presence of both jar's .json.
@@ -306,11 +306,29 @@ public class MinecraftDownloader {
         if(verInfo.logging != null) scheduleLoggingAssetDownloadIfNeeded(verInfo.logging);
 
         if(Tools.isValidString(verInfo.inheritsFrom)) {
-            JMinecraftVersionList.Version inheritedVersion = AsyncMinecraftDownloader.getListedVersion(verInfo.inheritsFrom);
+            JMinecraftVersionList.Version inheritedVersion = getVersionInfoForDownload(verInfo.inheritsFrom);
             // Infinite inheritance !?! :noway:
             return downloadAndProcessMetadata(activity, inheritedVersion, verInfo.inheritsFrom);
         }
         return true;
+    }
+
+    private JMinecraftVersionList.Version getVersionInfoForDownload(String versionName) throws IOException {
+        JMinecraftVersionList.Version inheritedVersion = AsyncMinecraftDownloader.getListedVersion(versionName);
+        if(inheritedVersion != null) return inheritedVersion;
+
+        ProgressLayout.setProgress(ProgressLayout.DOWNLOAD_MINECRAFT, 0,
+                R.string.newdl_downloading_metadata, versionName + ".json");
+        JMinecraftVersionList versionList = Tools.GLOBAL_GSON.fromJson(
+                DownloadUtils.downloadString(LauncherPreferences.PREF_VERSION_REPOS),
+                JMinecraftVersionList.class
+        );
+        if(versionList != null && versionList.versions != null) {
+            for(JMinecraftVersionList.Version version : versionList.versions) {
+                if(versionName.equals(version.id)) return version;
+            }
+        }
+        throw new IOException("Unable to find metadata for Minecraft " + versionName);
     }
 
     private void growDownloadList(int addedElementCount) {

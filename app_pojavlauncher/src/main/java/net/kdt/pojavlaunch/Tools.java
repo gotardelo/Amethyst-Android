@@ -1346,6 +1346,9 @@ public final class Tools {
     private static void ensureVersionJsonDownloaded(String versionId) throws IOException {
         File versionJson = new File(DIR_HOME_VERSION, versionId + "/" + versionId + ".json");
         if (versionJson.isFile() && versionJson.length() > 0) return;
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            throw new IOException("Unable to repair Minecraft version metadata on the main thread: " + versionId);
+        }
 
         try {
             JSONObject manifest = new JSONObject(DownloadUtils.downloadString(LauncherPreferences.PREF_VERSION_REPOS));
