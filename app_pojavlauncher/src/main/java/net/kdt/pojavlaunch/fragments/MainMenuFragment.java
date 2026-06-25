@@ -8,6 +8,7 @@ import static net.kdt.pojavlaunch.Tools.runOnUiThread;
 import static net.kdt.pojavlaunch.Tools.shareLog;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -23,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import com.kdt.mcgui.mcVersionSpinner;
 
 import net.kdt.pojavlaunch.CustomControlsActivity;
+import net.kdt.pojavlaunch.PojavApplication;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.cobblemon.CobblemonLegacyInstaller;
@@ -79,29 +81,26 @@ public class MainMenuFragment extends Fragment {
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
         mPlayButton.setOnClickListener(v -> {
-            try {
-                String profileKey = CobblemonLegacyInstaller.requireInstalledProfileReady(requireContext());
-                mVersionSpinner.reloadProfiles();
-                int profileIndex = mVersionSpinner.getProfileAdapter().resolveProfileIndex(profileKey);
-                if (profileIndex >= 0) mVersionSpinner.setProfileSelection(profileIndex);
-            } catch (IOException e) {
-                Tools.showErrorRemote("Nao foi possivel preparar o Cobblemon Legacy Fabric 1.21.1.", e);
-                return;
-            }
-
-            if (Tools.hasMods("sodium") && !(LauncherPreferences.DEFAULT_PREF.getBoolean("sodium_override", false))) {
-                AlertDialog sodiumWarningDialog = new AlertDialog.Builder(requireContext())
-                        .setTitle(R.string.sodium_warning_title)
-                        .setMessage(R.string.sodium_warning_message)
-                        .setNeutralButton(R.string.delete_sodium, (d,w)-> {
-                            Tools.deleteSodiumMods();
-                            ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
-                        })
-                        .create();
-                sodiumWarningDialog.show();
-            } else ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
-
-
+            Context appContext = requireContext().getApplicationContext();
+            mPlayButton.setEnabled(false);
+            PojavApplication.sExecutorService.execute(() -> {
+                try {
+                    String profileKey = CobblemonLegacyInstaller.requireInstalledProfileReady(appContext);
+                    runOnUiThread(() -> {
+                        if (!isAdded()) return;
+                        mPlayButton.setEnabled(true);
+                        mVersionSpinner.reloadProfiles();
+                        int profileIndex = mVersionSpinner.getProfileAdapter().resolveProfileIndex(profileKey);
+                        if (profileIndex >= 0) mVersionSpinner.setProfileSelection(profileIndex);
+                        launchPreparedGame();
+                    });
+                } catch (IOException e) {
+                    runOnUiThread(() -> {
+                        if (isAdded()) mPlayButton.setEnabled(true);
+                        Tools.showErrorRemote("Nao foi possivel preparar o Cobblemon Legacy Fabric 1.21.1.", e);
+                    });
+                }
+            });
         });
 
         mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
@@ -120,6 +119,20 @@ public class MainMenuFragment extends Fragment {
             Tools.swapFragment(requireActivity(), GamepadMapperFragment.class, GamepadMapperFragment.TAG, null);
             return true;
         });
+    }
+
+    private void launchPreparedGame() {
+        if (Tools.hasMods("sodium") && !(LauncherPreferences.DEFAULT_PREF.getBoolean("sodium_override", false))) {
+            AlertDialog sodiumWarningDialog = new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.sodium_warning_title)
+                    .setMessage(R.string.sodium_warning_message)
+                    .setNeutralButton(R.string.delete_sodium, (d,w)-> {
+                        Tools.deleteSodiumMods();
+                        ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
+                    })
+                    .create();
+            sodiumWarningDialog.show();
+        } else ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
     }
 
     private File getCurrentProfileDirectory() {
