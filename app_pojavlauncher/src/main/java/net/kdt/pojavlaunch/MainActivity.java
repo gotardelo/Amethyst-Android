@@ -57,6 +57,7 @@ import net.kdt.pojavlaunch.customcontrols.keyboard.TouchCharInput;
 import net.kdt.pojavlaunch.customcontrols.mouse.GyroControl;
 import net.kdt.pojavlaunch.customcontrols.mouse.HotbarView;
 import net.kdt.pojavlaunch.customcontrols.mouse.Touchpad;
+import net.kdt.pojavlaunch.cobblemon.CobblemonLegacyInstaller;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.prefs.QuickSettingSideDialog;
@@ -279,8 +280,14 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                             : Tools.CTRLMAP_PATH + "/" + minecraftProfile.controlFile);
         } catch(IOException e) {
             try {
-                Log.w("MainActivity", "Unable to load the control file, loading the default now", e);
-                mControlLayout.loadLayout(Tools.CTRLDEF_FILE);
+                File cobblemonControls = new File(Tools.CTRLMAP_PATH, CobblemonLegacyInstaller.CONTROL_LAYOUT_FILE);
+                if (CobblemonLegacyInstaller.PROFILE_NAME.equals(minecraftProfile.name) && cobblemonControls.isFile()) {
+                    Log.w("MainActivity", "Unable to load the selected control file, loading Cobblemon Legacy controls", e);
+                    mControlLayout.loadLayout(cobblemonControls.getAbsolutePath());
+                } else {
+                    Log.w("MainActivity", "Unable to load the control file, loading the default now", e);
+                    mControlLayout.loadLayout(Tools.CTRLDEF_FILE);
+                }
             } catch (IOException ioException) {
                 Tools.showError(this, ioException);
             }

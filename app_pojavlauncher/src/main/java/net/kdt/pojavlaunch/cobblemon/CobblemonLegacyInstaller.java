@@ -38,7 +38,7 @@ public final class CobblemonLegacyInstaller {
     public static final String PACK_VERSION = "0.2.2";
     public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.2/CobblemonLegacy-MobileFull-v0.2.2.mrpack";
     public static final String PACK_SHA1 = "9f27d41802df68492308594976655e45a2d8a74d";
-    private static final String CONTROL_LAYOUT_FILE = "cobblemon-legacy.json";
+    public static final String CONTROL_LAYOUT_FILE = "cobblemon-legacy.json";
     private static final String[][] REQUIRED_OPTIONS = new String[][]{
             {"key_key.inventory", "key.keyboard.e"},
             {"key_key.use", "key.mouse.right"},
@@ -249,6 +249,12 @@ public final class CobblemonLegacyInstaller {
 
     private static void ensureControlLayout(Context context, String profileKey) throws IOException {
         Tools.copyAssetFile(context, CONTROL_LAYOUT_FILE, Tools.CTRLMAP_PATH, CONTROL_LAYOUT_FILE, true);
+        String controlPath = new File(Tools.CTRLMAP_PATH, CONTROL_LAYOUT_FILE).getAbsolutePath();
+        LauncherPreferences.PREF_DEFAULTCTRL_PATH = controlPath;
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putString("defaultCtrl", controlPath)
+                .apply();
+
         MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
         if (profile == null) {
             throw new IOException("O perfil Cobblemon Legacy nao foi encontrado para aplicar controles.");
