@@ -20,6 +20,7 @@ import net.kdt.pojavlaunch.utils.DownloadUtils;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
+import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftResolution;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,6 +40,12 @@ public final class CobblemonLegacyInstaller {
     public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.2/CobblemonLegacy-MobileFull-v0.2.2.mrpack";
     public static final String PACK_SHA1 = "9f27d41802df68492308594976655e45a2d8a74d";
     public static final String CONTROL_LAYOUT_FILE = "cobblemon-legacy.json";
+    private static final String MOBILE_RENDERER = "opengles_mobileglues";
+    private static final String[] ANDROID_DISABLED_MOD_PREFIXES = new String[]{
+            "sodium-",
+            "iris-",
+            "indium-"
+    };
     private static final String[][] REQUIRED_OPTIONS = new String[][]{
             {"key_key.inventory", "key.keyboard.e"},
             {"key_key.use", "key.mouse.right"},
@@ -65,6 +72,19 @@ public final class CobblemonLegacyInstaller {
             {"key_key.pokebike.visuals", "key.keyboard.unknown"},
             {"key_key.pokebike.bell", "key.keyboard.unknown"},
             {"key_key.pokebike.headlight", "key.keyboard.unknown"}
+    };
+    private static final String[][] REQUIRED_PERFORMANCE_OPTIONS = new String[][]{
+            {"graphicsMode", "0"},
+            {"renderDistance", "4"},
+            {"simulationDistance", "4"},
+            {"mipmapLevels", "0"},
+            {"particles", "2"},
+            {"renderClouds", "\"false\""},
+            {"entityShadows", "false"},
+            {"entityDistanceScaling", "0.5"},
+            {"biomeBlendRadius", "0"},
+            {"maxFps", "45"},
+            {"enableVsync", "true"}
     };
 
     private CobblemonLegacyInstaller() {}
@@ -107,6 +127,7 @@ public final class CobblemonLegacyInstaller {
 
         ensureControlLayout(context, profileKey);
         ensureCobblemonKeybinds(profileKey);
+        ensureMobileCompatibility(context, profileKey);
         return true;
     }
 
@@ -131,6 +152,7 @@ public final class CobblemonLegacyInstaller {
         profile.lastVersionId = getFabricVersionId();
         ensureControlLayout(context, profileKey);
         ensureCobblemonKeybinds(profileKey);
+        ensureMobileCompatibility(context, profileKey);
 
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
@@ -222,6 +244,7 @@ public final class CobblemonLegacyInstaller {
 
         ensureControlLayout(context, profileKey);
         ensureCobblemonKeybinds(profileKey);
+        ensureMobileCompatibility(context, profileKey);
 
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
@@ -264,9 +287,17 @@ public final class CobblemonLegacyInstaller {
     }
 
     private static void ensureCobblemonKeybinds(String profileKey) throws IOException {
+        ensureOptions(profileKey, REQUIRED_OPTIONS);
+    }
+
+    private static void ensureMobilePerformanceOptions(String profileKey) throws IOException {
+        ensureOptions(profileKey, REQUIRED_PERFORMANCE_OPTIONS);
+    }
+
+    private static void ensureOptions(String profileKey, String[][] requiredOptions) throws IOException {
         MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
         if (profile == null) {
-            throw new IOException("O perfil Cobblemon Legacy nao foi encontrado para aplicar keybinds.");
+            throw new IOException("O perfil Cobblemon Legacy nao foi encontrado para aplicar opcoes.");
         }
 
         File gameDir = Tools.getGameDirPath(profile);
@@ -274,7 +305,7 @@ public final class CobblemonLegacyInstaller {
         File optionsFile = new File(gameDir, "options.txt");
         String currentOptions = optionsFile.isFile() ? Tools.read(optionsFile.getAbsolutePath()) : "";
         String[] rawLines = currentOptions.split("\\R", -1);
-        boolean[] applied = new boolean[REQUIRED_OPTIONS.length];
+        boolean[] applied = new boolean[requiredOptions.length];
         boolean changed = false;
         List<String> nextLines = new ArrayList<>();
 
@@ -288,13 +319,13 @@ public final class CobblemonLegacyInstaller {
             }
 
             String key = line.substring(0, separatorIndex);
-            int requiredIndex = findRequiredOptionIndex(key);
+            int requiredIndex = findRequiredOptionIndex(key, requiredOptions);
             if (requiredIndex < 0) {
                 nextLines.add(line);
                 continue;
             }
 
-            String replacement = REQUIRED_OPTIONS[requiredIndex][0] + ":" + REQUIRED_OPTIONS[requiredIndex][1];
+            String replacement = requiredOptions[requiredIndex][0] + ":" + requiredOptions[requiredIndex][1];
             if (!applied[requiredIndex]) {
                 nextLines.add(replacement);
                 applied[requiredIndex] = true;
@@ -305,9 +336,9 @@ public final class CobblemonLegacyInstaller {
             }
         }
 
-        for (int i = 0; i < REQUIRED_OPTIONS.length; i++) {
+        for (int i = 0; i < requiredOptions.length; i++) {
             if (!applied[i]) {
-                nextLines.add(REQUIRED_OPTIONS[i][0] + ":" + REQUIRED_OPTIONS[i][1]);
+                nextLines.add(requiredOptions[i][0] + ":" + requiredOptions[i][1]);
                 changed = true;
             }
         }
@@ -321,11 +352,92 @@ public final class CobblemonLegacyInstaller {
         }
     }
 
-    private static int findRequiredOptionIndex(String key) {
-        for (int i = 0; i < REQUIRED_OPTIONS.length; i++) {
-            if (REQUIRED_OPTIONS[i][0].equals(key)) return i;
+    private static int findRequiredOptionIndex(String key, String[][] requiredOptions) {
+        for (int i = 0; i < requiredOptions.length; i++) {
+            if (requiredOptions[i][0].equals(key)) return i;
         }
         return -1;
+    }
+
+    private static void ensureMobileCompatibility(Context context, String profileKey) throws IOException {
+        MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(profileKey);
+        if (profile == null) {
+            throw new IOException("O perfil Cobblemon Legacy nao foi encontrado para aplicar compatibilidade mobile.");
+        }
+
+        applyLauncherPerformanceDefaults(context);
+        applyProfilePerformance(profile);
+        ensureMobilePerformanceOptions(profileKey);
+        disableAndroidProblemMods(Tools.getGameDirPath(profile));
+        LauncherProfiles.write();
+    }
+
+    private static void applyLauncherPerformanceDefaults(Context context) {
+        int totalRam = Tools.getTotalDeviceMemory(context);
+        int ramAllocation;
+        int resolutionRatio;
+        if (totalRam < 3072) {
+            ramAllocation = 896;
+            resolutionRatio = 50;
+        } else if (totalRam < 4096) {
+            ramAllocation = 1152;
+            resolutionRatio = 55;
+        } else if (totalRam < 6144) {
+            ramAllocation = 1536;
+            resolutionRatio = 65;
+        } else {
+            ramAllocation = 2048;
+            resolutionRatio = 75;
+        }
+
+        LauncherPreferences.PREF_RAM_ALLOCATION = ramAllocation;
+        LauncherPreferences.PREF_SCALE_FACTOR = resolutionRatio / 100f;
+        LauncherPreferences.PREF_USE_ALTERNATE_SURFACE = false;
+        LauncherPreferences.PREF_FORCE_VSYNC = true;
+        LauncherPreferences.PREF_SUSTAINED_PERFORMANCE = true;
+        LauncherPreferences.PREF_BUTTONSIZE = 105f;
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putInt("allocation", ramAllocation)
+                .putInt("resolutionRatio", resolutionRatio)
+                .putBoolean("alternate_surface", false)
+                .putBoolean("force_vsync", true)
+                .putBoolean("sustainedPerformance", true)
+                .putInt("buttonscale", 105)
+                .apply();
+    }
+
+    private static void applyProfilePerformance(MinecraftProfile profile) {
+        profile.pojavRendererName = MOBILE_RENDERER;
+        MinecraftResolution resolution = new MinecraftResolution();
+        resolution.width = 854;
+        resolution.height = 480;
+        profile.resolution = new MinecraftResolution[]{resolution};
+    }
+
+    private static void disableAndroidProblemMods(File gameDir) throws IOException {
+        File modsDir = new File(gameDir, "mods");
+        File[] modFiles = modsDir.listFiles((ignored, name) -> name.toLowerCase().endsWith(".jar"));
+        if (modFiles == null || modFiles.length == 0) return;
+
+        File disabledDir = new File(gameDir, "mods-disabled-android");
+        for (File modFile : modFiles) {
+            String lowerName = modFile.getName().toLowerCase();
+            if (!startsWithAny(lowerName, ANDROID_DISABLED_MOD_PREFIXES)) continue;
+
+            FileUtils.ensureDirectory(disabledDir);
+            File targetFile = new File(disabledDir, modFile.getName());
+            if (targetFile.isFile()) targetFile.delete();
+            if (!modFile.renameTo(targetFile) && modFile.isFile() && !modFile.delete()) {
+                throw new IOException("Nao foi possivel desativar mod incompativel no Android: " + modFile.getName());
+            }
+        }
+    }
+
+    private static boolean startsWithAny(String value, String[] prefixes) {
+        for (String prefix : prefixes) {
+            if (value.startsWith(prefix)) return true;
+        }
+        return false;
     }
 
     private static void ensureMinecraftVersionJson() throws IOException {
