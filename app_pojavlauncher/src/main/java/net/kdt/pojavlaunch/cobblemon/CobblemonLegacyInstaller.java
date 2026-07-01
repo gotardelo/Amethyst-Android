@@ -36,9 +36,9 @@ public final class CobblemonLegacyInstaller {
     public static final String PROFILE_NAME = "Cobblemon Legacy";
     public static final String MINECRAFT_VERSION = "1.21.1";
     public static final String FABRIC_LOADER_VERSION = "0.19.3";
-    public static final String PACK_VERSION = "0.2.2";
-    public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.2/CobblemonLegacy-MobileFull-v0.2.2.mrpack";
-    public static final String PACK_SHA1 = "9f27d41802df68492308594976655e45a2d8a74d";
+    public static final String PACK_VERSION = "0.2.3";
+    public static final String PACK_URL = "https://github.com/gotardelo/cobblemonlegacy-downloads/releases/download/mobile-full-v0.2.3/CobblemonLegacy-MobileFull-v0.2.3.mrpack";
+    public static final String PACK_SHA1 = "c0bdba4adc1485a489d300fa99136d5f44d68bb2";
     public static final String CONTROL_LAYOUT_FILE = "cobblemon-legacy.json";
     private static final String MOBILE_RENDERER = "opengles_mobileglues";
     private static final String[] ANDROID_DISABLED_MOD_PREFIXES = new String[]{
